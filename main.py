@@ -29,55 +29,59 @@ def update():
     if player.hp >0:
         
         player.angle = player.angle_to(mouse_pos)-90
+        for i in range(min(5,math.floor(player.score/100)+1)):
+            current_level = i + 1
+            if random.randint(0,200)<6 - current_level:
+                print(current_level)
+                enemy = Actor('enemygreen5')
+                enemy.lv = current_level
+                enemy.hp = 1 + 2*current_level
+                enemy.scale = 0.3+current_level/3
+                from_dir = random.randint(0,3)
+                if from_dir == 0:       #from top
+                    enemy.x = random.randint(0, WIDTH)
+                    enemy.y = 0
+                elif from_dir == 1:     #from left
+                    enemy.x = 0
+                    enemy.y = random.randint(0, HEIGHT)
+                elif from_dir == 2:     #from bottom
+                    enemy.x = random.randint(0, WIDTH)
+                    enemy.y = HEIGHT
+                elif from_dir == 3:     #from right
+                    enemy.x = WIDTH
+                    enemy.y = random.randint(0, HEIGHT)
+                    
+                enemy.point_towards(player)
+                enemies.append(enemy)
 
-        if random.randint(0,100)<2:     # enemy lv1
-            enemy = Actor('enemygreen5')
-            enemy.lv = 1
-            enemy.hp = 1
-            from_dir = random.randint(0,3)
-            if from_dir == 0:       #from top
-                enemy.x = random.randint(0, WIDTH)
-                enemy.y = 0
-            elif from_dir == 1:     #from left
-                enemy.x = 0
-                enemy.y = random.randint(0, HEIGHT)
-            elif from_dir == 2:     #from bottom
-                enemy.x = random.randint(0, WIDTH)
-                enemy.y = HEIGHT
-            elif from_dir == 3:     #from right
-                enemy.x = WIDTH
-                enemy.y = random.randint(0, HEIGHT)
-                
-            enemy.point_towards(player)
-            enemies.append(enemy)
-            
-        if random.randint(0, 100) < 1 and player.score > 100:     # enemy lv2
-            enemy = Actor('enemyred3')
-            enemy.lv = 2
-            enemy.hp = 3
-            from_dir = random.randint(0, 3)
-            if from_dir == 0:  # from top
-                enemy.x = random.randint(0, WIDTH)
-                enemy.y = 0
-            elif from_dir == 1:  # from left
-                enemy.x = 0
-                enemy.y = random.randint(0, HEIGHT)
-            elif from_dir == 2:  # from bottom
-                enemy.x = random.randint(0, WIDTH)
-                enemy.y = HEIGHT
-            elif from_dir == 3:  # from right
-                enemy.x = WIDTH
-                enemy.y = random.randint(0, HEIGHT)
+        # if random.randint(0, 100) < 1 and player.score > 100:     # enemy lv2
+        #     enemy = Actor('enemygreen5')
+        #     enemy.lv = 2
+        #     enemy.hp = 3
+        #     enemy.scale = 1+enemy.lv/2
+        #     from_dir = random.randint(0, 3)
+        #     if from_dir == 0:  # from top
+        #         enemy.x = random.randint(0, WIDTH)
+        #         enemy.y = 0
+        #     elif from_dir == 1:  # from left
+        #         enemy.x = 0
+        #         enemy.y = random.randint(0, HEIGHT)
+        #     elif from_dir == 2:  # from bottom
+        #         enemy.x = random.randint(0, WIDTH)
+        #         enemy.y = HEIGHT
+        #     elif from_dir == 3:  # from right
+        #         enemy.x = WIDTH
+        #         enemy.y = random.randint(0, HEIGHT)
 
-            enemy.point_towards(player)
-            enemies.append(enemy)
+        #     enemy.point_towards(player)
+        #     enemies.append(enemy)
                
         for e in enemies:
             e.move_forward(2)
             if e.left>WIDTH or e.right<0 or e.top>HEIGHT or e.bottom<0:
                 enemies.remove(e)
                 continue
-            if player.colliderect(e):
+            if player.collide_pixel(e):
                 player.hp-=5*e.lv
                 enemies.remove(e)
                 continue
@@ -88,7 +92,7 @@ def update():
                 elasers.append(elaser)
             
         if keyboard.space:
-            sounds.sfx_laser2.play()
+            sounds.sfx_shieldup.play()
             laser_count += 1
             
         if laser_count >= 5:
@@ -121,22 +125,26 @@ def update():
             l.move_forward(10)
             if l.bottom < 0 or l.top >HEIGHT or l.right <0 or l.left>WIDTH:
                 lasers.remove(l)
-                continue
+                break
+            need_break = False
             for e in enemies:
-                if l.colliderect(e):
+                if l.collide_pixel(e):
                     e.hp -= 1
-                    lasers.remove(l)
+                    need_break = True
                     if e.hp <= 0:
                         enemies.remove(e)
-                        player.score += 10
+                        player.score += 10 * e.lv
                         break
+            if need_break:
+                lasers.remove(l)
+                break
         
         for el in elasers:
             el.move_forward(5)
             if el.top > HEIGHT:
                 elasers.remove(el)
                 continue
-            if player.colliderect(el):
+            if player.collide_pixel(el):
                 player.hp -=1
                 elasers.remove(el)
                 break
@@ -151,8 +159,6 @@ def on_mouse_move(pos):
 def draw():
     screen.clear()
     bg.draw()
-    screen.draw.filled_rect(Rect((0,0), (WIDTH*player.hp/100, 20)),'green')
-    screen.draw.text(str(player.score), (10 , 30), fontsize=60)
     for l in lasers:
         l.draw()
         
@@ -164,4 +170,7 @@ def draw():
     for e in enemies:
         e.draw()
 
+    screen.draw.filled_rect(Rect((0, 0), (WIDTH*player.hp/100, 20)), 'green')
+    screen.draw.text(str(player.score), (10, 30), fontsize=60)
+    
 pgzrun.go()
